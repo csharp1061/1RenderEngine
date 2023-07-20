@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="core\math\math.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\math\vector2.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\math\random.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\log\log.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\base\macro.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\base\public_singleton.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\math\vector3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\math\vector4.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\math\matrix3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\math\matrix4.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\math\quaternion.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\math\math_headers.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\math\triangle.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\OBJ_Loader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\texture.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="function\render\shader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="function\render\rasterizer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="function\render\light.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\model.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\tgaimage.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="function\platform\camera.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="function\platform\scene.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="core\base\timer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="core\math\math.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="core\log\log.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="core\math\matrix3.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="core\math\matrix4.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="core\math\quaternion.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="core\math\triangle.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="function\render\rasterizer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="core\math\vector2.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="core\math\vector3.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="core\math\vector4.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\model.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\tgaimage.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="function\platform\scene.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="core\base\timer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="x64\Debug\1RenderEngine.exe.recipe" />
+    <None Include="x64\Debug\1RenderEngine.tlog\1RenderEngine.lastbuildstate" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="x64\Debug\1RenderEngine.log" />
+    <Text Include="x64\Debug\vcpkg.applocal.log" />
+  </ItemGroup>
+</Project>
