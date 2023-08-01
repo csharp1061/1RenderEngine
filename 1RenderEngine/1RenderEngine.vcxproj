@@ -144,9 +144,12 @@
     <ClInclude Include="core\math\vector4.h" />
     <ClInclude Include="core\math\quaternion.h" />
     <ClInclude Include="function\platform\camera.h" />
+    <ClInclude Include="function\platform\camera_s.h" />
     <ClInclude Include="function\platform\scene.h" />
+    <ClInclude Include="function\platform\win32.h" />
     <ClInclude Include="function\render\light.h" />
     <ClInclude Include="function\render\rasterizer.h" />
+    <ClInclude Include="function\render\sampler.h" />
     <ClInclude Include="function\render\shader.h" />
     <ClInclude Include="resource\model.h" />
     <ClInclude Include="resource\OBJ_Loader.h" />
@@ -164,10 +167,16 @@
     <ClCompile Include="core\math\vector2.cpp" />
     <ClCompile Include="core\math\vector3.cpp" />
     <ClCompile Include="core\math\vector4.cpp" />
+    <ClCompile Include="function\platform\camera.cpp" />
     <ClCompile Include="function\platform\scene.cpp" />
+    <ClCompile Include="function\platform\win32.cpp" />
     <ClCompile Include="function\render\rasterizer.cpp" />
+    <ClCompile Include="function\render\sampler.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="resource\model.cpp" />
+    <ClCompile Include="resource\pbr_shader.cpp" />
+    <ClCompile Include="resource\phong_shader.cpp" />
+    <ClCompile Include="resource\skybox_shader.cpp" />
     <ClCompile Include="resource\tgaimage.cpp" />
   </ItemGroup>
   <ItemGroup>

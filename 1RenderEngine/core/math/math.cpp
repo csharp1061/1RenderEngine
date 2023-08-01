@@ -21,7 +21,7 @@ namespace OEngine {
 
 	float Math::getMaxElement(float a, float b, float c)
 	{
-		return max(a, max(b, c));
+		return std::max(a, std::max(b, c));
 	}
 
 	float Math::degreesToRadians(float degree) { return degree * Math_fDeg2Rad; }
@@ -156,15 +156,17 @@ namespace OEngine {
 	Matrix4x4 Math::makePerspectiveMatrix(Radian fovy, float aspect, float znear, float zfar)
 	{
 		float tan_half_fovy = Math::tan(fovy / 2.f);
+		float t = fabs(znear) * tan_half_fovy;
+		float r = aspect * t;
 
-		Matrix4x4 ret = Matrix4x4::ZERO;
-		ret[0][0] = 1.f / (aspect * tan_half_fovy);
-		ret[1][1] = 1.f / tan_half_fovy;
-		ret[2][2] = zfar / (znear - zfar);
-		ret[3][2] = -1.f;
-		ret[2][3] = -(zfar * znear) / (zfar - znear);
-
-		return ret;
+		Matrix4x4 m = Matrix4x4::IDENTITY;
+		m[0][0] = znear / r;
+		m[1][1] = znear / t;
+		m[2][2] = (znear + zfar) / (znear - zfar);
+		m[2][3] = 2 * znear * zfar / (zfar - znear);
+		m[3][2] = 1;
+		m[3][3] = 0;
+		return m;
 	}
 
 	Matrix4x4 Math::makeOrthographicProjectionMatrix(const float left,
@@ -211,4 +213,51 @@ namespace OEngine {
 
 		return proj_matrix;
 	}
+
+	/*
+	* ----------------------йсв╤лчЁЩ-------------------------------
+	*/
+	void Math::getFrustumPlanes(std::vector<Vector4>& planes, Matrix4x4 viewPersM)
+	{
+		// left
+		planes[0].x = viewPersM[0][3] + viewPersM[0][0];
+		planes[0].y = viewPersM[1][3] + viewPersM[1][0];
+		planes[0].z = viewPersM[2][3] + viewPersM[2][0];
+		planes[0].w = viewPersM[3][3] + viewPersM[3][0];
+
+		// right
+		planes[1].x = viewPersM[0][3] - viewPersM[0][0];
+		planes[1].y = viewPersM[1][3] - viewPersM[1][0];
+		planes[1].z = viewPersM[2][3] - viewPersM[2][0];
+		planes[1].w = viewPersM[3][3] - viewPersM[3][0];
+
+		// bottom
+		planes[2].x = viewPersM[0][3] + viewPersM[0][1];
+		planes[2].y = viewPersM[1][3] + viewPersM[1][1];
+		planes[2].z = viewPersM[2][3] + viewPersM[2][1];
+		planes[2].w = viewPersM[3][3] + viewPersM[3][1];
+
+		// top
+		planes[3].x = viewPersM[0][3] - viewPersM[0][1];
+		planes[3].y = viewPersM[1][3] - viewPersM[1][1];
+		planes[3].z = viewPersM[2][3] - viewPersM[2][1];
+		planes[3].w = viewPersM[3][3] - viewPersM[3][1];
+
+		// near
+		planes[4].x = viewPersM[0][3] + viewPersM[0][2];
+		planes[4].y = viewPersM[1][3] + viewPersM[1][2];
+		planes[4].z = viewPersM[2][3] + viewPersM[2][2];
+		planes[4].w = viewPersM[3][3] + viewPersM[3][2];
+
+		// Far
+		planes[5].x = viewPersM[0][3] - viewPersM[0][2];
+		planes[5].y = viewPersM[1][3] - viewPersM[1][2];
+		planes[5].z = viewPersM[2][3] - viewPersM[2][2];
+		planes[5].w = viewPersM[3][3] - viewPersM[3][2];
+	}
+
+	bool Math::point2Plane(const Vector3& point, const Vector4& plane)
+	{
+		return (point.x * plane.x + point.y * plane.y + point.z * plane.z + plane.w) >= 0;
+	} 
 } // OEngine

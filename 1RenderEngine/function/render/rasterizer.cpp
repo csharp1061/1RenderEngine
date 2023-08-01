@@ -106,7 +106,7 @@ namespace OEngine
 		}
 	}
 
-	static bool isBackFacing(const std::vector<Vector3>& ndcPos)
+	static bool isBackFacing(Vector3 ndcPos[3])
 	{
 		Vector3 a = ndcPos[0];
 		Vector3 b = ndcPos[1];
@@ -130,7 +130,28 @@ namespace OEngine
 		return (a * b >= 0) && (a * c >= 0) && (b * c >= 0);
 	}
 
+	static bool insideTriangle(int x, int y, const Vector3* _v)
+	{
+		Vector2 PA = Vector2{ x - _v[0].x, y - _v[0].y };
+		Vector2 PB = Vector2{ x - _v[1].x, y - _v[1].y };
+		Vector2 PC = Vector2{ x - _v[2].x, y - _v[2].y };
+
+		float a = PA.crossProduct(PB);
+		float b = PB.crossProduct(PC);
+		float c = PC.crossProduct(PA);
+
+		return (a * b >= 0) && (a * c >= 0) && (b * c >= 0);
+	}
+
 	static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector4* v)
+	{
+		float c1 = (x * (v[1].y - v[2].y) + (v[2].x - v[1].x) * y + v[1].x * v[2].y - v[2].x * v[1].y) / (v[0].x * (v[1].y - v[2].y) + (v[2].x - v[1].x) * v[0].y + v[1].x * v[2].y - v[2].x * v[1].y);
+		float c2 = (x * (v[2].y - v[0].y) + (v[0].x - v[2].x) * y + v[2].x * v[0].y - v[0].x * v[2].y) / (v[1].x * (v[2].y - v[0].y) + (v[0].x - v[2].x) * v[1].y + v[2].x * v[0].y - v[0].x * v[2].y);
+		float c3 = (x * (v[0].y - v[1].y) + (v[1].x - v[0].x) * y + v[0].x * v[1].y - v[1].x * v[0].y) / (v[2].x * (v[0].y - v[1].y) + (v[1].x - v[0].x) * v[2].y + v[0].x * v[1].y - v[1].x * v[0].y);
+		return { c1, c2, c3 };
+	}
+
+	static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3* v)
 	{
 		float c1 = (x * (v[1].y - v[2].y) + (v[2].x - v[1].x) * y + v[1].x * v[2].y - v[2].x * v[1].y) / (v[0].x * (v[1].y - v[2].y) + (v[2].x - v[1].x) * v[0].y + v[1].x * v[2].y - v[2].x * v[1].y);
 		float c2 = (x * (v[2].y - v[0].y) + (v[0].x - v[2].x) * y + v[2].x * v[0].y - v[0].x * v[2].y) / (v[1].x * (v[2].y - v[0].y) + (v[0].x - v[2].x) * v[1].y + v[2].x * v[0].y - v[0].x * v[2].y);
@@ -158,7 +179,6 @@ namespace OEngine
 				Vector3(tp1.x, tp1.y, tp1.z)
 			};
 			
-			if (isBackFacing(viewPos)) continue;
 
 			Vector4 v[] = {
 				mvp * t->m_vertices[0],
@@ -208,89 +228,42 @@ namespace OEngine
 		
 	}
 
-	static Vector3 interpolate(float alpha, float beta, float gamma, const Vector3& ver1, const Vector3& ver2, const Vector3& ver3, float weight)
-	{
-		return Vector3((alpha * ver1 + beta * ver2, gamma * ver3) / weight);
-	}
 
-	static Vector2 interpolate(float alpha, float beta, float gamma, const Vector2& ver1, const Vector2& ver2, const Vector2& ver3, float weight)
-	{
-		auto u = (alpha * ver1.x + beta * ver2.x + gamma * ver3.x) / weight;
-		auto v = (alpha * ver1.y + beta * ver2.y + gamma * ver3.y) / weight;
-
-		return Vector2(u, v);
-	}
-
-	void Rasterizer::draw(const Model& model)
+	void Rasterizer::draw(Model::Ptr model, ShaderProgram::Ptr shader)
 	{
 		float f1 = (50 - 0.1) / 2.0;
 		float f2 = (50 + 0.1) / 2.0;
-
-		Matrix4x4 mvp = m_projection * m_view * m_model;
-		for (int i = 0; i < model.nfaces(); i++)
+		/*
+		* TODO: 1. shader 相关参数的设置
+		*		2. 以face为单位, 处理每个片元的相关数据，将数据存放在
+		*				-in_clipPos		(经过mvp变换的windowPos)
+		*				-in_worldPos	(经过model矩阵变换的世界坐标系下的坐标)
+		*				-in_normal		(通过model的normal_map获取 或 片元中自带的)
+		*				-in_uv			(片元自带数据)
+		*		3. 顶点数据处理(整合至shader中的vertex_shader中)
+		*		4. 齐次裁剪 放在 齐次项处理之前
+		*		5. 三角光栅化   
+		*/
+		for (int i = 0; i < model->nfaces(); i++)
 		{
-			Triangle t;
 			for (int j = 0; j < 3; j++)
 			{
-				t.m_vertices[j] = Vector4(model.m_verts[model.m_faces[i][j * 3]]);
-				t.m_normals[j] = model.m_norms[model.m_faces[i][j * 3 + 1]];
-				t.m_tex_coords[j] = model.m_uvs[model.m_faces[i][j * 3 + 2]];
+				shader->vertex_shader(i, j);
 			}
-			
-			auto tp1 = m_view * m_model * t.m_vertices[0];
-			auto tp2 = m_view * m_model * t.m_vertices[1];
-			auto tp3 = m_view * m_model * t.m_vertices[2];
 
-			std::vector<Vector3> viewPos{
-				Vector3(tp1.x, tp1.y, tp1.z),
-				Vector3(tp1.x, tp1.y, tp1.z),
-				Vector3(tp1.x, tp1.y, tp1.z)
-			};
+			int num_vertex = 3;
+			// TODO
+			if (!model->is_skybox) num_vertex = homoClipping(shader->m_payload);
 
-			Vector4 v[] = {
-				mvp * t.m_vertices[0],
-				mvp * t.m_vertices[1],
-				mvp * t.m_vertices[2]
-			};
-
-			// 处理齐次项
-			for (auto& vec : v)
+			for (int k = 0; k < num_vertex - 2; k++)
 			{
-				vec.x /= vec.w;
-				vec.y /= vec.w;
-				vec.z /= vec.w;
+				int ind0 = 0;
+				int ind1 = k + 1;
+				int ind2 = k + 2;
+
+				transform_attri(shader->m_payload, ind0, ind1, ind2);
+				rasterize_triangle(shader, model);
 			}
-
-			Matrix4x4 inv_trans = (m_view * m_model).inverse().tranpose();
-
-			Vector4 n[] = {
-				inv_trans * Vector4(t.m_normals[0], 0),
-				inv_trans * Vector4(t.m_normals[1], 0),
-				inv_trans * Vector4(t.m_normals[2], 0)
-			};
-
-			for (auto& vert : v)
-			{
-				vert.x = 0.5 * m_width * (vert.x + 1.0);
-				vert.y = 0.5 * m_height * (vert.y + 1.0);
-				vert.z = vert.z * f1 + f2;
-			}
-
-			for (int i = 0; i < 3; i++)
-			{
-				t.setVertex(i, v[i]);
-			}
-
-			for (int i = 0; i < 3; i++)
-			{
-				t.setNormal(i, Vector3(n[i].x, n[i].y, n[i].z));
-			}
-
-			t.setColor(0, 148.f, 121.f, 92.f);
-			t.setColor(1, 148.f, 121.f, 92.f);
-			t.setColor(2, 148.f, 121.f, 92.f);
-
-			rasterize_triangle(t, viewPos);
 		}
 	}
 
@@ -301,10 +274,10 @@ namespace OEngine
 		unsigned char color[3];
 
 		// 光栅化过程
-		float xlhs = Math::min3(t.m_vertices[0].x, t.m_vertices[1].x, t.m_vertices[2].x);
-		float xrhs = Math::max3(t.m_vertices[0].x, t.m_vertices[1].x, t.m_vertices[2].x);
-		float ybot = Math::min3(t.m_vertices[0].y, t.m_vertices[1].y, t.m_vertices[2].y);
-		float ycel = Math::max3(t.m_vertices[0].y, t.m_vertices[1].y, t.m_vertices[2].y);
+		float xlhs = std::min(t.m_vertices[0].x, std::min(t.m_vertices[1].x, t.m_vertices[2].x));
+		float xrhs = std::max(t.m_vertices[0].x, std::max(t.m_vertices[1].x, t.m_vertices[2].x));
+		float ybot = std::min(t.m_vertices[0].y, std::min(t.m_vertices[1].y, t.m_vertices[2].y));
+		float ycel = std::max(t.m_vertices[0].y, std::max(t.m_vertices[1].y, t.m_vertices[2].y));
 
 		// std::cout << xlhs << " -> " << xrhs << "----" << ybot << " -> " << ycel << '\n';
 
@@ -323,7 +296,7 @@ namespace OEngine
 							+ gamma * t.m_vertices[2].z / t.m_vertices[2].w;
 					zp *= Z;
 
-					// depth test
+					// depth test  整合插值部分
 					/*
 					*  interpolate_color			: 颜色插值
 					*  interpolate_normal			：法向量插值
@@ -337,11 +310,76 @@ namespace OEngine
 						auto interpolate_texcoords = interpolate(alpha, beta, gamma, t.m_tex_coords[0], t.m_tex_coords[1], t.m_tex_coords[2], 1);
 						auto interpolate_shadingcoords = interpolate(alpha, beta, gamma, worldPos[0], worldPos[1], worldPos[2], 1);
 
-						fragment_shader_payload payload(interpolate_color, interpolate_normal, interpolate_texcoords, m_texture ? &*m_texture : nullptr);
-						payload.view_pos = interpolate_shadingcoords;
-						auto pixel_color = fragment_shader(payload);
-						set_pixel(Vector2((int)x, (int)y), pixel_color);
+						// auto pixel_color = fragment_shader(payload);
+						// set_pixel(Vector2((int)x, (int)y), pixel_color);
 						m_depth_buf[get_index(x, y)] = zp;
+					}
+				}
+			}
+		}
+	}
+
+	void Rasterizer::rasterize_triangle(ShaderProgram::Ptr shader, Model::Ptr model)
+	{
+		Vector3 ndcPos[3];
+		Vector3 windowPos[3];
+
+		// 去除齐次项
+		for (int i = 0; i < 3; i++)
+		{
+			ndcPos[i].x = shader->m_payload.clipCoord_attri[i].x / shader->m_payload.clipCoord_attri[i].w;
+			ndcPos[i].y = shader->m_payload.clipCoord_attri[i].y / shader->m_payload.clipCoord_attri[i].w;
+			ndcPos[i].z = shader->m_payload.clipCoord_attri[i].z / shader->m_payload.clipCoord_attri[i].w;
+		}
+
+		// 视窗变化
+		for (int i = 0; i < 3; i++)
+		{
+			windowPos[i].x = 0.5 * m_width * (ndcPos[i].x + 1.f);
+			windowPos[i].y = 0.5 * m_height * (ndcPos[i].y + 1.f);
+			windowPos[i].z = -(shader->m_payload.clipCoord_attri[i].w);
+		}
+
+		if (!model->is_skybox)
+		{
+			if (isBackFacing(ndcPos))
+				return;
+		}
+
+		// 光栅化过程
+		float xlhs = std::min(windowPos[0].x, std::min(windowPos[1].x, windowPos[2].x));
+		float xrhs = std::max(windowPos[0].x, std::max(windowPos[1].x, windowPos[2].x));
+		float ybot = std::min(windowPos[0].y, std::min(windowPos[1].y, windowPos[2].y));
+		float ycel = std::max(windowPos[0].y, std::max(windowPos[1].y, windowPos[2].y));
+
+		// std::cout << xlhs << " -> " << xrhs << "----" << ybot << " -> " << ycel << '\n';
+
+		for (int x = xlhs; x <= xrhs; x++)
+		{
+			for (int y = ybot; y <= ycel; y++)
+			{
+				int ind = get_index(x, y);
+
+				if (ind < 0 || ind >= m_depth_buf.size()) continue;
+
+				if (insideTriangle(x, y, windowPos))
+				{
+					// std::cout << "inside compute..." << '\n';
+					auto [alpha, gamma, beta] = computeBarycentric2D(x, y, windowPos);
+					float Z = 1.f / (alpha / shader->m_payload.clipCoord_attri[0].w + beta / shader->m_payload.clipCoord_attri[1].w + gamma / shader->m_payload.clipCoord_attri[2].w);
+					float zp = alpha * shader->m_payload.clipCoord_attri[0].z / shader->m_payload.clipCoord_attri[0].w
+						+ beta * shader->m_payload.clipCoord_attri[1].z / shader->m_payload.clipCoord_attri[1].w
+						+ gamma * shader->m_payload.clipCoord_attri[2].z / shader->m_payload.clipCoord_attri[2].w;
+					zp *= Z;
+					
+					if (zp < m_depth_buf[ind])
+					{
+						m_depth_buf[ind] = zp;
+
+						Vector3 color = shader->fragment_shader(alpha, gamma, beta);
+
+						Vector3 pixel_color = color.clamp(color, Vector3(0, 0, 0), Vector3(255.f, 255.f, 255.f));
+						set_pixel(Vector2((int)x, (int)y), pixel_color);
 					}
 				}
 			}
@@ -379,27 +417,20 @@ namespace OEngine
 	{
 		m_frame_buf.resize(w * h);
 		m_depth_buf.resize(w * h);
-		m_texture = std::nullopt;
-	}
-
-	void Rasterizer::set_vertex_shader(std::function<Vector3(vertex_shader_payload)> vs)
-	{
-		vertex_shader = vs;
-	}
-
-	void Rasterizer::set_fragment_shader(std::function<Vector3(fragment_shader_payload)> fs)
-	{
-		fragment_shader = fs;
 	}
 
 	int Rasterizer::get_index(int x, int y)
 	{
-		return (m_height - y) * m_width + x;
+		return y * m_width + x;
 	}
 
 	void Rasterizer::set_pixel(const Vector2& point, const Vector3& color)
 	{
-		int ind = (m_height - point.y) * m_width + point.x;
+		// 去除超出屏幕范围的点
+		if (point.x < 0 || point.x > m_width
+			|| point.y < 0 || point.y > m_height) return;
+
+		int ind = point.y * m_width + point.x;
 		// std::cout << "pixel color in [" << ind << ']' << "RGB: " << color.x << color.y << color.z;
 		m_frame_buf[ind] = color;
 	}

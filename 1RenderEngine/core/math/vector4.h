@@ -182,8 +182,14 @@ namespace OEngine
 		// dot
 		float dotProduct(const Vector4& rhs) { return x * rhs.x + y * rhs.y + z * rhs.z + w * rhs.w; }
 
+		Vector3 to_vec3() { return Vector3(x, y, z); }
 		// valid ºÏ·¨ÐÔ¼ì²â
 		bool isNaN() { return Math::isNan(x) || Math::isNan(y) || Math::isNan(z) || Math::isNan(w); }
+
+		static Vector4 lerp(const Vector4& lhs, const Vector4& rhs, float alpha)
+		{
+			return lhs + alpha * (rhs - lhs);
+		}
 
 		static const Vector4 ZERO;
 		static const Vector4 UNIT_SCALE;

@@ -2,15 +2,13 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "../core/math/math_headers.h"
-#include "../function/render/shader.h"
-#include "./tgaimage.h"
+#include "../function/render/sampler.h"
 
 namespace OEngine
 {
-	typedef struct cubemap cubemap_t;
-
 	class Model
 	{
 		friend class Rasterizer;
@@ -26,6 +24,8 @@ namespace OEngine
 		void load_texture(std::string filename, const char* suffix, TGAImage& img);
 
 	public:
+		typedef std::shared_ptr<Model> Ptr;
+
 		Model(const char* filename, int is_skybox = 0);
 		~Model();
 		

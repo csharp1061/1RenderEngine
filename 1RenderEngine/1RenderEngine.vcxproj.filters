@@ -84,6 +84,15 @@
     <ClInclude Include="core\base\timer.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="function\render\sampler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="function\platform\win32.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="function\platform\camera_s.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="core\math\math.cpp">
@@ -129,6 +138,24 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="core\base\timer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\phong_shader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\skybox_shader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="function\render\sampler.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="function\platform\win32.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="function\platform\camera.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\pbr_shader.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

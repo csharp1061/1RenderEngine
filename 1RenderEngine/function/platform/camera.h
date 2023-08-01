@@ -2,6 +2,7 @@
 
 #include "../../core//math/math_headers.h"
 #include <vector>
+#include <memory>
 
 namespace OEngine
 {
@@ -21,7 +22,7 @@ namespace OEngine
 	const float ZOOM = 45.0f;
 
 	// 默认相机 -- FPS相机
-	class Camera
+	class CameraFPS
 	{
 	public:
 		Vector3 m_position;
@@ -37,7 +38,7 @@ namespace OEngine
 		float m_mouseSensitivity;
 		float m_zoom;
 
-		Camera(Vector3 position = Vector3::ZERO, Vector3 up = Vector3::UNIT_Y, float yaw = YAW, float pitch = PITCH) : m_front(Vector3::NEGATIVE_UNIT_Z), m_movementSpeed(SPEED), m_mouseSensitivity(SENSITIVITY), m_zoom(ZOOM)
+		CameraFPS(Vector3 position = Vector3::ZERO, Vector3 up = Vector3::UNIT_Y, float yaw = YAW, float pitch = PITCH) : m_front(Vector3::NEGATIVE_UNIT_Z), m_movementSpeed(SPEED), m_mouseSensitivity(SENSITIVITY), m_zoom(ZOOM)
 		{
 			m_position = position;
 			m_worldUp = up;
@@ -106,4 +107,31 @@ namespace OEngine
 		}
 	};
 
+	class Camera
+	{
+	public:
+		typedef std::shared_ptr<Camera> Ptr;
+
+		Vector3 m_eye;
+		Vector3 m_target;
+		Vector3 m_up;
+
+		Vector3 x;
+		Vector3 y;
+		Vector3 z;
+
+		float aspect;
+
+		Camera(Vector3 e, Vector3 t, Vector3 up, float a) : m_eye(e), m_target(t), m_up(up), aspect(a) {}
+		
+		~Camera() = default;
+	};
+
+	void update_camera_pos(Camera::Ptr camera);
+
+	void handle_mouse_events(Camera::Ptr camera);
+
+	void handle_key_events(Camera::Ptr camera);
+
+	void handle_events(Camera::Ptr camera);
 } // OEngine

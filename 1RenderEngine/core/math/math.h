@@ -7,6 +7,8 @@
 #include <cmath>
 #include <limits>
 #include <stdint.h>
+#include <vector>
+#include <algorithm>
 
 // float类型比较
 #define CMP(x, y) (fabsf(x - y) < FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
@@ -248,30 +250,31 @@ namespace OEngine {
         static Radian asin(float value);
         static Radian atan(float value) { return Radian(::atan(value)); }
         static Radian atan2(float y_v, float x_v) { return Radian(::atan2(y_v, x_v)); }
+   
 
-        template <class T>
-        static constexpr T max(const T A, const T B)
-        {
-            return A >= B ? A : B;
-        }
+        // -------------------------------------------------------------------------
+        //   视锥剔除相关算法
 
-        template <class T>
-        static constexpr T min(const T A, const T B)
-        {
-            return A <= B ? A : B;
-        }
+        /*
+        *  获取视锥的六个面的方程 
+        *       方法：Fast Extraction of Viewing Frustum Planes from the WorldView-Projection Matrix
+        *       链接：https://www8.cs.umu.se/kurser/5DV180/VT18/lab/plane_extraction.pdf
+        *       left -> right -> bottom -> top -> near -> far
+        *       视锥法线指向视锥体内部
+        */
+        static void getFrustumPlanes(std::vector<Vector4>& planes, Matrix4x4 viewPersM);
 
-        template <class T>
-        static constexpr T max3(const T A, const T B, const T C)
-        {
-            return max(max(A, B), C);
-        }
+        /*
+        *  点与平面的距离 将点 p(x, y, z) 代入
+        *     平面方程为 Ax + By + Cz + D = d;
+        *       
+        *       d > 0: 在平面法向量正方向上
+        *       d = 0: 在平面上
+        *       d < 0: 在平面法向量负方向上
+        */
+        static bool point2Plane(const Vector3& point, const Vector4& plane);
 
-        template <class T>
-        static constexpr T min3(const T A, const T B, const T C)
-        {
-            return min(min(A, B), C);
-        } 
+        // -------------------------------------------------------------------------
 
         static Matrix4x4
             makeViewMatrix(const Vector3& position, const Quaternion& orientation, const Matrix4x4* reflect_matrix = 0);

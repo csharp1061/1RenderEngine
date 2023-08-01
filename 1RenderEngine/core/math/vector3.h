@@ -5,7 +5,6 @@
 #include <cassert>
 
 namespace OEngine {
-	class Vector4;
 
 	class Vector3
 	{
