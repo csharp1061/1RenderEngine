@@ -200,4 +200,266 @@ namespace OEngine
 			break;
 		}
 	}
+
+	void generate_prefilter_map(int thread_id, int face_id, int mip_level, Model::Ptr model, TGAImage& image)
+	{
+		int factor = 1;
+		for (int temp = 0; temp < mip_level; temp++)
+			factor *= 2;
+		int width = 512 / factor;
+		int height = 512 / factor;
+
+
+		if (width < 64)
+			width = 64;
+
+		int x, y;
+
+		float roughness[10];
+		for (int i = 0; i < 10; i++)
+			roughness[i] = i * (1.0 / 9.0);
+		roughness[0] = 0; roughness[9] = 1;
+
+		/* for multi-thread */
+		//int interval = width / thread_num;
+		//int start = thread_id * interval;
+		//int end = (thread_id + 1) * interval;
+		//if (thread_id == thread_num - 1)
+		//	end = width;
+
+		Vector3 prefilter_color(0, 0, 0);
+		for (x = 0; x < height; x++)
+		{
+			for (y = 0; y < width; y++)
+			{
+				float x_coord, y_coord, z_coord;
+				set_normal_coord(face_id, x, y, x_coord, y_coord, z_coord, float(width - 1));
+
+				Vector3 normal = Vector3(x_coord, y_coord, z_coord);
+				normal.normalise();					//z-axis
+				Vector3 up = fabs(normal[1]) < 0.999f ? Vector3(0.0f, 1.0f, 0.0f) : Vector3(0.0f, 0.0f, 1.0f);
+				Vector3 right = up.crossProduct(normal).normalizedCopy();	//x-axis
+				up = normal.crossProduct(right);						//y-axis
+
+				Vector3 r = normal;
+				Vector3 v = r;
+
+				prefilter_color = Vector3(0, 0, 0);
+				float total_weight = 0.0f;
+				int numSamples = 1024;
+				for (int i = 0; i < numSamples; i++)
+				{
+					Vector2 Xi = hammersley2d(i, numSamples);
+					Vector3 h = ImportanceSampleGGX(Xi, normal, roughness[mip_level]);
+					Vector3 l = (2.0 * v.dotProduct(h) * h - v).normalizedCopy();
+
+					Vector3 radiance = cubemap_sample(l, model->environment_map);
+					float n_dot_l = std::max(normal.dotProduct(l), 0.f);
+
+					if (n_dot_l > 0)
+					{
+						prefilter_color += radiance * n_dot_l;
+						total_weight += n_dot_l;
+					}
+				}
+
+				prefilter_color = prefilter_color / total_weight;
+				//cout << irradiance << endl;
+				int red = std::min(prefilter_color.x * 255.0f, 255.f);
+				int green = std::min(prefilter_color.y * 255.0f, 255.f);
+				int blue = std::min(prefilter_color.z * 255.0f, 255.f);
+				//cout << irradiance << endl;
+				TGAColor temp((unsigned char)red, (unsigned char)green, (unsigned char)blue);
+				image.set(x, y, temp);
+			}
+			printf("%f% \n", x / 512.0f);
+		}
+	}
+
+	void generate_irradiance_map(int thread_id, int face_id, Model::Ptr model, TGAImage& image)
+	{
+		int x, y;
+		/*Model* model[1];
+		model[0] = new Model(modelname5[1], 1);
+
+		payload_t p;
+		p.model = model[0];*/
+
+		Vector3 irradiance(0, 0, 0);
+		for (x = 0; x < 256; x++)
+		{
+			for (y = 0; y < 256; y++)
+			{
+				float x_coord, y_coord, z_coord;
+				set_normal_coord(face_id, x, y, x_coord, y_coord, z_coord);
+				Vector3 normal = Vector3(x_coord, y_coord, z_coord).normalizedCopy();					 //z-axis
+				Vector3 up = fabs(normal[1]) < 0.999f ? Vector3(0.0f, 1.0f, 0.0f) : Vector3(0.0f, 0.0f, 1.0f);
+				Vector3 right = up.crossProduct(normal).normalizedCopy();								 //tagent x-axis
+				up = normal.crossProduct(right);					                                 //tagent y-axis
+
+				irradiance = Vector3(0, 0, 0);
+				float sampleDelta = 0.025f;
+				int numSamples = 0;
+				for (float phi = 0.0f; phi < 2.0 * Math_PI; phi += sampleDelta)
+				{
+					for (float theta = 0.0f; theta < 0.5 * Math_PI; theta += sampleDelta)
+					{
+						// spherical to cartesian (in tangent space)
+						Vector3 tangentSample = Vector3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
+						// tangent space to world
+						Vector3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal;
+						sampleVec.normalise();
+						Vector3 color = cubemap_sample(sampleVec, model->environment_map);
+
+						irradiance += color * sin(theta) * cos(theta);
+						numSamples++;
+					}
+				}
+
+				irradiance = Math_PI * irradiance * (1.0f / numSamples);
+				int red = std::min(irradiance.x * 255.0f, 255.f);
+				int green = std::min(irradiance.y * 255.0f, 255.f);
+				int blue = std::min(irradiance.z * 255.0f, 255.f);
+
+				TGAColor temp(red, green, blue);
+				image.set(x, y, temp);
+			}
+			printf("%f% \n", x / 256.0f);
+		}
+	}
+
+	Vector3 IntegrateBRDF(float NdotV, float roughness)
+	{
+		// 由于各向同性，随意取一个 V 即可
+		Vector3 V;
+		V[0] = 0;
+		V[1] = sqrt(1.0 - NdotV * NdotV);
+		V[2] = NdotV;
+
+		float A = 0.0;
+		float B = 0.0;
+		float C = 0.0;
+
+		Vector3 N = Vector3(0.0, 0.0, 1.0);
+
+		const int SAMPLE_COUNT = 1024;
+		for (int i = 0; i < SAMPLE_COUNT; ++i)
+		{
+			// generates a sample vector that's biased towards the
+			// preferred alignment direction (importance sampling).
+			Vector2 Xi = hammersley2d(i, SAMPLE_COUNT);
+
+			{ // A and B
+				Vector3 H = ImportanceSampleGGX(Xi, N, roughness);
+				Vector3 L = (2.0 * V.dotProduct(H) * H - V).normalizedCopy();
+
+				float NdotL = std::max(L.z, 0.f);
+				float NdotV = std::max(V.z, 0.f);
+				float NdotH = std::max(H.z, 0.f);
+				float VdotH = std::max(V.dotProduct(H), 0.f);
+
+				if (NdotL > 0.0)
+				{
+					float G = geometry_Smith(NdotV, NdotL, roughness);
+					float G_Vis = (G * VdotH) / (NdotH * NdotV);
+					float Fc = pow(1.0 - VdotH, 5.0);
+
+					A += (1.0 - Fc) * G_Vis;
+					B += Fc * G_Vis;
+				}
+			}
+		}
+		return Vector3(A, B, C) / float(SAMPLE_COUNT);
+	}
+
+	/* traverse all 2d coord for lut part */
+	void calculate_BRDF_LUT(TGAImage& image)
+	{
+		int i, j;
+		for (i = 0; i < 256; i++)
+		{
+			for (j = 0; j < 256; j++)
+			{
+				Vector3 color;
+				if (i == 0)
+					color = IntegrateBRDF(0.002f, j / 256.0f);
+				else
+					color = IntegrateBRDF(i / 256.0f, j / 256.0f);
+				//cout << irradiance << endl;
+				int red = std::min(color.x * 255.0f, 255.f);
+				int green = std::min(color.y * 255.0f, 255.f);
+				int blue = std::min(color.z * 255.0f, 255.f);
+
+				//cout << irradiance << endl;
+				TGAColor temp(red, green, blue);
+				image.set(i, j, temp);
+			}
+		}
+	}
+
+	/* traverse all mipmap level for prefilter map */
+	void foreach_prefilter_miplevel(TGAImage& image, Model::Ptr model)
+	{
+		const char* faces[6] = { "px", "nx", "py", "ny", "pz", "nz" };
+		char paths[6][256];
+		const int thread_num = 4;
+
+		for (int mip_level = 8; mip_level < 10; mip_level++)
+		{
+			for (int j = 0; j < 6; j++) {
+				sprintf_s(paths[j], "%s/m%d_%s.tga", "./obj/common2", mip_level, faces[j]);
+			}
+			int factor = 1;
+			for (int temp = 0; temp < mip_level; temp++)
+				factor *= 2;
+			int w = 512 / factor;
+			int h = 512 / factor;
+
+			if (w < 64)
+				w = 64;
+			if (h < 64)
+				h = 64;
+			std::cout << w << h << std::endl;
+			image = TGAImage(w, h, TGAImage::RGB);
+			for (int face_id = 0; face_id < 6; face_id++)
+			{
+				std::thread thread[thread_num];
+				for (int i = 0; i < thread_num; i++)
+					thread[i] = std::thread(generate_prefilter_map, i, face_id, mip_level, model, std::ref(image));
+				for (int i = 0; i < thread_num; i++)
+					thread[i].join();
+
+				//calculate_BRDF_LUT();
+				image.flip_vertically(); // to place the origin in the bottom left corner of the image
+				image.write_tga_file(paths[face_id]);
+			}
+		}
+
+	}
+
+	/* traverse all faces of cubemap for irradiance map */
+	void foreach_irradiance_map(TGAImage& image, Model::Ptr model)
+	{
+		const char* faces[6] = { "px", "nx", "py", "ny", "pz", "nz" };
+		char paths[6][256];
+		const int thread_num = 4;
+
+
+		for (int j = 0; j < 6; j++) {
+			sprintf_s(paths[j], "%s/i_%s.tga", "./obj/common2", faces[j]);
+		}
+		image = TGAImage(256, 256, TGAImage::RGB);
+		for (int face_id = 0; face_id < 6; face_id++)
+		{
+			std::thread thread[thread_num];
+			for (int i = 0; i < thread_num; i++)
+				thread[i] = std::thread(generate_irradiance_map, i, face_id, model, std::ref(image));
+			for (int i = 0; i < thread_num; i++)
+				thread[i].join();
+
+			image.flip_vertically(); // to place the origin in the bottom left corner of the image
+			image.write_tga_file(paths[face_id]);
+		}
+
+	}
 } // OEngine

@@ -44,7 +44,7 @@ namespace OEngine
 		if (window->buttons[0])
 		{
 			Vector2 cur_pos = get_mouse_pos();
-			window->mouse_info.orbit_delta = window->mouse_info.orbit_delta - cur_pos;
+			window->mouse_info.orbit_delta = window->mouse_info.orbit_pos - cur_pos;
 			window->mouse_info.orbit_pos = cur_pos;
 		}
 

@@ -151,10 +151,10 @@ namespace OEngine {
 
 		Vector3& operator/=(const float scaler)
 		{
-			assert(scaler != 0);
-			x /= scaler;
-			y /= scaler;
-			z /= scaler;
+			float t = 1 / scaler;
+			x *= t;
+			y *= t;
+			z *= t; 
 			return *this;
 		}
 

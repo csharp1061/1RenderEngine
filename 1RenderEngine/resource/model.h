@@ -5,10 +5,15 @@
 #include <memory>
 
 #include "../core/math/math_headers.h"
-#include "../function/render/sampler.h"
+#include "../resource/tgaimage.h"
 
 namespace OEngine
 {
+	typedef struct cubemap
+	{
+		TGAImage* faces[6];
+	} cubemap_t;
+
 	class Model
 	{
 		friend class Rasterizer;
