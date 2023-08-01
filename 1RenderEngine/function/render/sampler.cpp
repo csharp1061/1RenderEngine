@@ -94,4 +94,110 @@ namespace OEngine
 		color = texture_sample(uv, cubemap->faces[index]);
 		return color;
 	}
+
+	/* for image-based lighting pre-computing */
+	float radicalInverse_VdC(unsigned int bits) {
+		bits = (bits << 16u) | (bits >> 16u);
+		bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+		bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+		bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+		bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+		return float(bits) * 2.3283064365386963e-10; // / 0x100000000
+	}
+
+	Vector2 hammersley2d(unsigned int i, unsigned int N) {
+		return Vector2(float(i) / float(N), radicalInverse_VdC(i));
+	}
+
+	Vector3 hemisphereSample_uniform(float u, float v) {
+		float phi = v * 2.0f * Math_PI;
+		float cosTheta = 1.0f - u;
+		float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
+		return Vector3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+	}
+
+	Vector3 hemisphereSample_cos(float u, float v) {
+		float phi = v * 2.0 * Math_PI;
+		float cosTheta = sqrt(1.0 - u);
+		float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+		return Vector3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+	}
+
+	Vector3 ImportanceSampleGGX(Vector2 Xi, Vector3 N, float roughness)
+	{
+		float a = roughness * roughness;
+
+		float phi = 2.0 * Math_PI * Xi.x;
+		float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a * a - 1.0) * Xi.y));
+		float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+
+		// from spherical coordinates to cartesian coordinates
+		Vector3 H;
+		H[0] = cos(phi) * sinTheta;
+		H[1] = sin(phi) * sinTheta;
+		H[2] = cosTheta;
+
+		// from tangent-space vector to world-space sample vector
+		Vector3 up = abs(N.z) < 0.999 ? Vector3(0.0, 0.0, 1.0) : Vector3(1.0, 0.0, 0.0);
+		Vector3 tangent = up.crossProduct(N).normalizedCopy();
+		Vector3 bitangent = N.crossProduct(tangent);
+
+		Vector3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
+		return sampleVec.normalizedCopy();
+	}
+
+	static float SchlickGGX_geometry(float n_dot_v, float roughness)
+	{
+		float r = (1 + roughness);
+		float k = r * r / 8.0;
+		k = roughness * roughness / 2.0f;
+		return n_dot_v / (n_dot_v * (1 - k) + k);
+	}
+
+	static float geometry_Smith(float n_dot_v, float n_dot_l, float roughness)
+	{
+		float g1 = SchlickGGX_geometry(n_dot_v, roughness);
+		float g2 = SchlickGGX_geometry(n_dot_l, roughness);
+
+		return g1 * g2;
+	}
+
+	void set_normal_coord(int face_id, int x, int y, float& x_coord, float& y_coord, float& z_coord, float length = 255)
+	{
+		switch (face_id)
+		{
+		case 0:   //positive x (right face)
+			x_coord = 0.5f;
+			y_coord = -0.5f + y / length;
+			z_coord = -0.5f + x / length;
+			break;
+		case 1:   //negative x (left face)		
+			x_coord = -0.5f;
+			y_coord = -0.5f + y / length;
+			z_coord = 0.5f - x / length;
+			break;
+		case 2:   //positive y (top face)
+			x_coord = -0.5f + x / length;
+			y_coord = 0.5f;
+			z_coord = -0.5f + y / length;
+			break;
+		case 3:   //negative y (bottom face)
+			x_coord = -0.5f + x / length;
+			y_coord = -0.5f;
+			z_coord = 0.5f - y / length;
+			break;
+		case 4:   //positive z (back face)
+			x_coord = 0.5f - x / length;
+			y_coord = -0.5f + y / length;
+			z_coord = 0.5f;
+			break;
+		case 5:   //negative z (front face)
+			x_coord = -0.5f + x / length;
+			y_coord = -0.5f + y / length;
+			z_coord = -0.5f;
+			break;
+		default:
+			break;
+		}
+	}
 } // OEngine

@@ -176,7 +176,7 @@ namespace OEngine
 		Vector3 ambient = Vector3(0.03f) * albedo * occlusion;
 		color = ambient + lo;
 
-		color = ReinhardMapping(color);
+		color = ReinhardMapping(color)*2.5f;
 
 		return color * 255.f;
 		// return { alpha * 255, gamma * 255, beta * 255 };

@@ -36,7 +36,7 @@ int main()
 
 	OEngine::window_init(M_WIDTH, M_HEIGHT, "OERender");
 
-	auto m = std::make_shared<OEngine::Model>("./models/gun/Cerberus.obj");
+	auto m = std::make_shared<OEngine::Model>("./models/helmet/helmet.obj");
 	auto skyBox = std::make_shared<OEngine::Model>("./models/skybox2/box.obj", 1);
 
 	auto r = std::make_shared<OEngine::Rasterizer>(M_WIDTH, M_HEIGHT);
@@ -91,7 +91,7 @@ int main()
 		updateMatrix(EUT_CAMERA, view, projection, skyboxShader, PBRShader);
 
 		// r->draw(m);
-		r->draw(skyBox, skyboxShader);
+		// r->draw(skyBox, skyboxShader);
 		// r->draw(m, shader);
 		r->draw(m, PBRShader);
 

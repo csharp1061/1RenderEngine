@@ -114,7 +114,7 @@ namespace OEngine
 		float flag = a.x * b.y - a.y * b.x +
 			b.x * c.y - b.y * c.x +
 			c.x * a.y - c.y * a.x;
-		return flag <= 0.f;
+		return flag <= 0;
 	}
 
 	static bool insideTriangle(int x, int y, const Vector4* _v)
@@ -261,7 +261,7 @@ namespace OEngine
 				int ind1 = k + 1;
 				int ind2 = k + 2;
 
-				transform_attri(shader->m_payload, ind0, ind1, ind2);
+				if (!model->is_skybox) transform_attri(shader->m_payload, ind0, ind1, ind2);
 				rasterize_triangle(shader, model);
 			}
 		}
@@ -323,6 +323,7 @@ namespace OEngine
 	{
 		Vector3 ndcPos[3];
 		Vector3 windowPos[3];
+		int is_skybox = model->is_skybox;
 
 		// È¥³ýÆë´ÎÏî
 		for (int i = 0; i < 3; i++)
@@ -337,10 +338,10 @@ namespace OEngine
 		{
 			windowPos[i].x = 0.5 * m_width * (ndcPos[i].x + 1.f);
 			windowPos[i].y = 0.5 * m_height * (ndcPos[i].y + 1.f);
-			windowPos[i].z = -(shader->m_payload.clipCoord_attri[i].w);
+			windowPos[i].z = is_skybox ? 1000:-(shader->m_payload.clipCoord_attri[i].w);
 		}
 
-		if (!model->is_skybox)
+		if (!is_skybox)
 		{
 			if (isBackFacing(ndcPos))
 				return;
@@ -367,9 +368,9 @@ namespace OEngine
 					// std::cout << "inside compute..." << '\n';
 					auto [alpha, gamma, beta] = computeBarycentric2D(x, y, windowPos);
 					float Z = 1.f / (alpha / shader->m_payload.clipCoord_attri[0].w + beta / shader->m_payload.clipCoord_attri[1].w + gamma / shader->m_payload.clipCoord_attri[2].w);
-					float zp = alpha * shader->m_payload.clipCoord_attri[0].z / shader->m_payload.clipCoord_attri[0].w
-						+ beta * shader->m_payload.clipCoord_attri[1].z / shader->m_payload.clipCoord_attri[1].w
-						+ gamma * shader->m_payload.clipCoord_attri[2].z / shader->m_payload.clipCoord_attri[2].w;
+					float zp = alpha * windowPos[0].z / shader->m_payload.clipCoord_attri[0].w
+						+ beta * windowPos[1].z / shader->m_payload.clipCoord_attri[1].w
+						+ gamma * windowPos[2].z / shader->m_payload.clipCoord_attri[2].w;
 					zp *= Z;
 					
 					if (zp < m_depth_buf[ind])
